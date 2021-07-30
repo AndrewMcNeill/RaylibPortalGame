@@ -12,11 +12,13 @@
 #include "raylib.h"
 #include "raymath.h"
 
-typedef struct Portal {
+typedef struct Portal Portal;
+struct Portal {
     Vector2 position;
     float size;
     Vector2 point1, point2;
-} Portal;
+    Portal* linkedPortal;
+};
 
 void UpdatePortalPoints(Vector2 position, Portal* portal) {
     float portalPlayerAngle = Vector2Angle(position, (*portal).position) + 90;
@@ -73,6 +75,10 @@ int main(void)
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             num_portals++;
             portals[num_portals-1] = mousePortal;
+            if (num_portals % 2 == 0) {
+                portals[num_portals-2].linkedPortal = &portals[num_portals-1];
+                portals[num_portals-1].linkedPortal = &portals[num_portals-2];
+            }
         }
         //----------------------------------------------------------------------------------
 
@@ -108,8 +114,6 @@ int main(void)
                 DrawTriangleFan(points, 4, GetColor(0xdd773380));
                 Vector2 points2[4] = {portals[i].point2, portals[i].point1, line1, line2};
                 DrawTriangleFan(points2, 4, GetColor(0x4466ff80));
-                
-                // DrawCircleV(Vector2Scale(Vector2Add(portals[i].point1, portals[i].point2), 0.5f), portalSize/2, GetColor(0xdd333380));
             }
 
             DrawRectangleV(Vector2Subtract(playerPosition, Vector2Scale(playerSize, 0.5f)), playerSize, playerColor);
