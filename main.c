@@ -13,8 +13,8 @@
 #include "raymath.h"
 #include <stdio.h>
 
-#define WIDTH 600
-#define HEIGHT 400
+#define WIDTH 1024
+#define HEIGHT 768
 
 #define DOTCOLOR 0x882200FF
 
@@ -201,63 +201,143 @@ int main(void)
 
                 DrawLineEx(portals[i].point1, portals[i].point2, 3.0f, BLUE);
 
-                Vector2 points[4] = {portals[i].point1, portals[i].point2, line2, line1};
-                DrawTriangleFan(points, 4, GetColor(0xdd773360));
-                Vector2 points2[4] = {portals[i].point2, portals[i].point1, line1, line2};
-                DrawTriangleFan(points2, 4, GetColor(0xdd773360));
+                // Vector2 points[4] = {portals[i].point1, portals[i].point2, line2, line1};
+                // DrawTriangleFan(points, 4, GetColor(0xdd773360));
+                // Vector2 points2[4] = {portals[i].point2, portals[i].point1, line1, line2};
+                // DrawTriangleFan(points2, 4, GetColor(0xdd773360));
+
+                Vector2 points[11];
 
                 Vector2 intersection;
                 
                 Vector2 ray = Vector2Normalize(Vector2Subtract(portals[i].point1, playerPosition));
                 ray = Vector2Scale(ray, 2000);
                 enum Direction point1Dir = RayScreenCollisionPoint(playerPosition, ray, WIDTH, HEIGHT, &intersection);
+                if (fabs(intersection.x) < 0.01f) intersection.x = 0;
+                if (fabs(intersection.y) < 0.01f) intersection.y = 0;
                 DrawCircleV(intersection, 8.0f, GetColor(DOTCOLOR));
                 
-                
+                Vector2 intersection2;
                 ray = Vector2Normalize(Vector2Subtract(portals[i].point2, playerPosition));
                 ray = Vector2Scale(ray, 2000);
-                enum Direction point2Dir = RayScreenCollisionPoint(playerPosition, ray, WIDTH, HEIGHT, &intersection);
-                DrawCircleV(intersection, 8.0f, GetColor(DOTCOLOR));
+                enum Direction point2Dir = RayScreenCollisionPoint(playerPosition, ray, WIDTH, HEIGHT, &intersection2);
+                if (fabs(intersection2.x) < 0.01f) intersection2.x = 0;
+                if (fabs(intersection2.y) < 0.01f) intersection2.y = 0;
+                DrawCircleV(intersection2, 8.0f, GetColor(DOTCOLOR));
                 
-                /*if (point1Dir == Top && point2Dir == Right) {
-                    DrawCircleV(topRight, 8.0f, GetColor(DOTCOLOR));
-                } else if (point1Dir == Right && point2Dir == Bottom) {
-                    DrawCircleV(bottomRight, 8.0f, GetColor(DOTCOLOR));
-                } else if (point1Dir == Bottom && point2Dir == Left) {
-                    DrawCircleV(bottomLeft, 8.0f, GetColor(DOTCOLOR));
-                } else if (point1Dir == Left && point2Dir == Top) {
-                    DrawCircleV(topLeft, 8.0f, GetColor(DOTCOLOR));
-                }*/
+                points[0] = portals[i].point1;
+                points[1] = portals[i].point2;
+                points[2] = intersection2;
+                int finalPoint = 2;
                 if (point1Dir == Top) {
-                    if (point2Dir == Right) DrawCircleV(topRight, 8.0f, GetColor(DOTCOLOR));
+                    if (point2Dir == Right) {
+                        points[3] = topRight;
+                        finalPoint = 3;
+                        DrawCircleV(topRight, 8.0f, GetColor(DOTCOLOR));
+                    }
                     else if (point2Dir == Bottom) {
+                        points[3] = bottomRight;
+                        points[4] = topRight;
+                        finalPoint = 4;
                         DrawCircleV(topRight, 8.0f, GetColor(DOTCOLOR));
                         DrawCircleV(bottomRight, 8.0f, GetColor(DOTCOLOR));
                     }
                 } else if (point1Dir == Right) {
-                    if (point2Dir == Bottom) DrawCircleV(bottomRight, 8.0f, GetColor(DOTCOLOR));
+                    if (point2Dir == Bottom) {
+                        points[3] = bottomRight;
+                        finalPoint = 3;
+                        DrawCircleV(bottomRight, 8.0f, GetColor(DOTCOLOR));
+                    }
                     else if (point2Dir == Left) {
+                        points[3] = bottomLeft;
+                        points[4] = bottomRight;
+                        finalPoint = 4;
                         DrawCircleV(bottomRight, 8.0f, GetColor(DOTCOLOR));
                         DrawCircleV(bottomLeft, 8.0f, GetColor(DOTCOLOR));
                     }
                 } else if (point1Dir == Bottom) {
-                    if (point2Dir == Left) DrawCircleV(bottomLeft, 8.0f, GetColor(DOTCOLOR));
+                    if (point2Dir == Left) {
+                        points[3] = bottomLeft;
+                        finalPoint = 3;
+                        DrawCircleV(bottomLeft, 8.0f, GetColor(DOTCOLOR));}
+
                     else if (point2Dir == Top) {
+                        points[3] = topLeft;
+                        points[4] = bottomLeft;
+                        finalPoint = 4;
                         DrawCircleV(bottomLeft, 8.0f, GetColor(DOTCOLOR));
                         DrawCircleV(topLeft, 8.0f, GetColor(DOTCOLOR));
                     }
                 } else if (point1Dir == Left) {
-                    if (point2Dir == Top) DrawCircleV(topLeft, 8.0f, GetColor(DOTCOLOR));
+                    if (point2Dir == Top) {
+                        points[3] = topLeft;
+                        finalPoint = 3;
+                        DrawCircleV(topLeft, 8.0f, GetColor(DOTCOLOR));
+                    }
                     else if (point2Dir == Right) {
+                        points[3] = topRight;
+                        points[4] = topLeft;
+                        finalPoint = 4;
                         DrawCircleV(topLeft, 8.0f, GetColor(DOTCOLOR));
                         DrawCircleV(topRight, 8.0f, GetColor(DOTCOLOR));
                     }
                 }
+                points[++finalPoint] = intersection;
+                points[++finalPoint] = portals[i].point1;
+                
+                Vector2 textureCoords[11];
+                Vector2 polyTopLeft = {0,0};
+                Vector2 polyBottomRight = {9999999,9999999};
+                for (int j = 0; j <= finalPoint; j++) {
+                    textureCoords[j] = (Vector2) { points[j].x/WIDTH, points[j].y/HEIGHT };
+                    polyTopLeft.x = (polyTopLeft.x > points[j].x) ? polyTopLeft.x : points[j].x;
+                    polyTopLeft.y = (polyTopLeft.y > points[j].y) ? polyTopLeft.y : points[j].y;
+                    polyBottomRight.x = (polyBottomRight.x < points[j].x) ? polyBottomRight.x : points[j].x;
+                    polyBottomRight.y = (polyBottomRight.y < points[j].y) ? polyBottomRight.y : points[j].y;
+                    points[j].x -= WIDTH/2;
+                    points[j].y -= HEIGHT/2;
+                }
 
+                Vector2 center = GetMousePosition();
+                DrawTexturePoly(backgroundTexture, center,
+                    points, textureCoords, finalPoint+1, GetColor(0xddddddff));
+                    
+                for (int j = 0; j <= finalPoint; j++) {
+                    DrawCircleV(Vector2Add(points[j],(Vector2){WIDTH/2,HEIGHT/2}), (j*2)+4, WHITE);
+                }
+                DrawCircleV(center, 10, BLACK);
+                int butts = 4;
             }
 
             DrawRectangleV(Vector2Subtract(playerPosition, Vector2Scale(playerSize, 0.5f)), playerSize, playerColor);
 
+            /*
+            const int MAX_POINTS = 11;
+            Vector2 texcoords[] = { // Anti-clockwise order!
+                (Vector2){ 0.75f, 0.0f },
+                (Vector2){ 0.25f, 0.0f },
+                (Vector2){ 0.0f, 0.5f },
+                (Vector2){ 0.0f, 0.75f },
+                (Vector2){ 0.25f, 1.0f},
+                (Vector2){ 0.375f, 0.875f},
+                (Vector2){ 0.625f, 0.875f},
+                (Vector2){ 0.75f, 1.0f},
+                (Vector2){ 1.0f, 0.75f},
+                (Vector2){ 1.0f, 0.5f},
+                (Vector2){ 0.75f, 0.0f}  // Close the poly
+            };
+
+            Vector2 points[MAX_POINTS];
+
+            // Create the poly coords from the UV's
+            // you don't have to do this you can specify
+            // them however you want
+            for (int i = 0; i < MAX_POINTS; i++)
+            {
+                points[i].x = (texcoords[i].x - 0.5f)*WIDTH;
+                points[i].y = (texcoords[i].y - 0.5f)*HEIGHT;
+            }
+            DrawTexturePoly(backgroundTexture, (Vector2){WIDTH/2,HEIGHT/2},points,texcoords,11,WHITE);*/
 
             DrawFPS(10, 10);
 
