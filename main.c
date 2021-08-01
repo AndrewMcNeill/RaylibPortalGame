@@ -159,7 +159,7 @@ int main(void)
         UpdatePortalPoints(playerPosition, &mousePortal);
         for (int i = 0; i < num_portals; i++) {
             //if (Vector2Distance(playerPosition, portals[i].position) < 50) continue;
-            UpdatePortalPoints(playerPosition, &portals[i]);
+            //UpdatePortalPoints(playerPosition, &portals[i]);
 
         }
         
@@ -212,7 +212,7 @@ int main(void)
                 
                 Vector2 ray = Vector2Normalize(Vector2Subtract(portals[i].point1, playerPosition));
                 ray = Vector2Scale(ray, 2000);
-                enum Direction point1Dir = RayScreenCollisionPoint(playerPosition, ray, WIDTH, HEIGHT, &intersection);
+                enum Direction point1Dir = RayScreenCollisionPoint(portals[i].point1, ray, WIDTH, HEIGHT, &intersection);
                 if (fabs(intersection.x) < 0.01f) intersection.x = 0;
                 if (fabs(intersection.y) < 0.01f) intersection.y = 0;
                 DrawCircleV(intersection, 8.0f, GetColor(DOTCOLOR));
@@ -220,7 +220,7 @@ int main(void)
                 Vector2 intersection2;
                 ray = Vector2Normalize(Vector2Subtract(portals[i].point2, playerPosition));
                 ray = Vector2Scale(ray, 2000);
-                enum Direction point2Dir = RayScreenCollisionPoint(playerPosition, ray, WIDTH, HEIGHT, &intersection2);
+                enum Direction point2Dir = RayScreenCollisionPoint(portals[i].point2, ray, WIDTH, HEIGHT, &intersection2);
                 if (fabs(intersection2.x) < 0.01f) intersection2.x = 0;
                 if (fabs(intersection2.y) < 0.01f) intersection2.y = 0;
                 DrawCircleV(intersection2, 8.0f, GetColor(DOTCOLOR));
