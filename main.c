@@ -143,12 +143,6 @@ int main(void)
     Vector2 playerSize = { 20.0f, 20.0f };
     Color playerColor = DARKBLUE;
 
-    float portalSize = 100.0f;
-    Portal mousePortal = { .position = Vector2Zero(), .size = portalSize };
-
-    const int MAX_PORTALS = 20;
-    Portal portals[MAX_PORTALS];
-    int num_portals = 0;
 
     SetTargetFPS(60);               // Set our game to run at 60 frames-per-second
     //---------------------------------------------------------------------------------------
@@ -159,118 +153,13 @@ int main(void)
         // Update
         //----------------------------------------------------------------------------------
 
-        mousePortal.position = GetMousePosition();
-        UpdatePortalPoints(playerPosition, &mousePortal);
-        for (int i = 0; i < num_portals; i++) {
-            //if (Vector2Distance(playerPosition, portals[i].position) < 50) continue;
-            UpdatePortalPoints(playerPosition, &portals[i]);
-
-        }
         
         if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) playerPosition.x += 4.0f;
         if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) playerPosition.x -= 4.0f;
         if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) playerPosition.y -= 4.0f;
         if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) playerPosition.y += 4.0f;
 
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            num_portals++;
-            portals[num_portals-1] = mousePortal;
-            if (num_portals % 2 == 0) {
-                portals[num_portals-2].linkedPortal = &portals[num_portals-1];
-                portals[num_portals-1].linkedPortal = &portals[num_portals-2];
-            }
-        }
-        for (int i = 0; i < num_portals; i++) {
-            Vector2 intersection;
-            
-            Vector2 ray = Vector2Normalize(Vector2Subtract(portals[i].point1, playerPosition));
-            ray = Vector2Scale(ray, 2000);
-            enum Direction point1Dir = RayScreenCollisionPoint(portals[i].point1, ray, WIDTH, HEIGHT, &intersection);
-            if (fabs(intersection.x) < 0.01f) intersection.x = 0;
-            if (fabs(intersection.y) < 0.01f) intersection.y = 0;
-            
-            Vector2 intersection2;
-            ray = Vector2Normalize(Vector2Subtract(portals[i].point2, playerPosition));
-            ray = Vector2Scale(ray, 2000);
-            enum Direction point2Dir = RayScreenCollisionPoint(portals[i].point2, ray, WIDTH, HEIGHT, &intersection2);
-            if (fabs(intersection2.x) < 0.01f) intersection2.x = 0;
-            if (fabs(intersection2.y) < 0.01f) intersection2.y = 0;
-            
-            portals[i].polyPoints[0] = portals[i].point1;
-            portals[i].polyPoints[1] = portals[i].point2;
-            portals[i].polyPoints[2] = intersection2;
-            portals[i].numPolyPoints = 3;
-            if (point1Dir == Top) {
-                if (point2Dir == Right) {
-                    portals[i].polyPoints[3] = topRight;
-                    portals[i].numPolyPoints = 4;
-                }
-                else if (point2Dir == Bottom) {
-                    portals[i].polyPoints[3] = bottomRight;
-                    portals[i].polyPoints[4] = topRight;
-                    portals[i].numPolyPoints = 5;
-                }
-            } else if (point1Dir == Right) {
-                if (point2Dir == Bottom) {
-                    portals[i].polyPoints[3] = bottomRight;
-                    portals[i].numPolyPoints = 4;
-                }
-                else if (point2Dir == Left) {
-                    portals[i].polyPoints[3] = bottomLeft;
-                    portals[i].polyPoints[4] = bottomRight;
-                    portals[i].numPolyPoints = 5;
-                }
-            } else if (point1Dir == Bottom) {
-                if (point2Dir == Left) {
-                    portals[i].polyPoints[3] = bottomLeft;
-                    portals[i].numPolyPoints = 4;
-                }
-                else if (point2Dir == Top) {
-                    portals[i].polyPoints[3] = topLeft;
-                    portals[i].polyPoints[4] = bottomLeft;
-                    portals[i].numPolyPoints = 5;
-                }
-            } else if (point1Dir == Left) {
-                if (point2Dir == Top) {
-                    portals[i].polyPoints[3] = topLeft;
-                    portals[i].numPolyPoints = 4;
-                }
-                else if (point2Dir == Right) {
-                    portals[i].polyPoints[3] = topRight;
-                    portals[i].polyPoints[4] = topLeft;
-                    portals[i].numPolyPoints = 5;
-                }
-            }
-            portals[i].polyPoints[portals[i].numPolyPoints++] = intersection;
-            portals[i].polyPoints[portals[i].numPolyPoints++] = portals[i].point1;
-            
-            Vector2 polyTopLeft = {999999,99999};
-            Vector2 polyBottomRight = {0,0};
-            for (int j = 0; j < portals[i].numPolyPoints; j++) {
-                polyTopLeft.x = (polyTopLeft.x < portals[i].polyPoints[j].x) ? polyTopLeft.x : portals[i].polyPoints[j].x;
-                polyTopLeft.y = (polyTopLeft.y < portals[i].polyPoints[j].y) ? polyTopLeft.y : portals[i].polyPoints[j].y;
-                polyBottomRight.x = (polyBottomRight.x > portals[i].polyPoints[j].x) ? polyBottomRight.x : portals[i].polyPoints[j].x;
-                polyBottomRight.y = (polyBottomRight.y > portals[i].polyPoints[j].y) ? polyBottomRight.y : portals[i].polyPoints[j].y;
-                //portals[i].polyPoints[j].x -= WIDTH/2;
-                //portals[i].polyPoints[j].y -= HEIGHT/2;
-            }
-            portals[i].topLeft = polyTopLeft;
-            float width = polyBottomRight.x-polyTopLeft.x;
-            float height = polyBottomRight.y-polyTopLeft.y;
-            
-            for (int j = 0; j < portals[i].numPolyPoints; j++) {
-                portals[i].polyPoints[j].x = portals[i].polyPoints[j].x + polyTopLeft.x - width/2;
-                portals[i].polyPoints[j].y = portals[i].polyPoints[j].y + polyTopLeft.y - height/2;
-            }
-            portals[i].choppedTexture = LoadRenderTexture(width, height);
-            BeginTextureMode(portals[i].choppedTexture);
-                DrawTextureRec(backgroundTexture, 
-                    (Rectangle){.x=polyTopLeft.x, .y=polyTopLeft.y, .width=width, .height=-height},
-                    Vector2Zero(), WHITE);
-            EndTextureMode();
-            int butts = 4;
 
-        }
         //----------------------------------------------------------------------------------
 
         // Draw
@@ -279,57 +168,8 @@ int main(void)
 
             ClearBackground(RAYWHITE);
 
-            DrawTexture(backgroundTexture, 0, 0, WHITE);
-            
-            DrawLineEx(mousePortal.point1, mousePortal.point2, 3.0f, RED);
-
-            for (int i = 0; i < num_portals; i++) {
-                Vector2 line1 = Vector2Subtract(portals[i].point1, playerPosition);
-                line1 = Vector2Scale(line1, 1000);
-                line1 = Vector2Add(line1, playerPosition);
-                DrawLineEx(playerPosition, line1, 1.0f, BLACK);
-                
-                Vector2 line2 = Vector2Subtract(portals[i].point2, playerPosition);
-                line2 = Vector2Scale(line2, 1000);
-                line2 = Vector2Add(line2, playerPosition);
-                DrawLineEx(playerPosition, line2, 1.0f, BLACK);
-
-                DrawLineEx(portals[i].point1, portals[i].point2, 3.0f, BLUE);
-
-
-                /*
-                Vector2 textureCoords[8];
-                float width = portals[i].choppedTexture.texture.width;
-                float height = portals[i].choppedTexture.texture.height;
-                
-                for (int j = 0; j < portals[i].numPolyPoints; j++) {
-                    textureCoords[j] = (Vector2) { 
-                        (portals[i].polyPoints[j].x+width/2-portals[i].topLeft.x)/width, 
-                        (portals[i].polyPoints[j].y+height/2-portals[i].topLeft.y)/height 
-                    };
-                    if (fabs(textureCoords[j].x) < 0.001) textureCoords[j].x = 0;
-                    if (fabs(textureCoords[j].y) < 0.001) textureCoords[j].y = 0;
-                    if (fabs(textureCoords[j].x-1) < 0.001) textureCoords[j].x = 1;
-                    if (fabs(textureCoords[j].y-1) < 0.001) textureCoords[j].y = 1;
-                }
-                Vector2 center = GetMousePosition();
-                DrawTexturePoly(portals[i].choppedTexture.texture, center,
-                    portals[i].polyPoints, textureCoords, portals[i].numPolyPoints, GetColor(0xddddddff));
-                    
-                for (int j = 0; j < portals[i].numPolyPoints; j++) {
-                    DrawCircleV(Vector2Subtract(Vector2Add(portals[i].polyPoints[j],(Vector2){width/2,height/2}), portals[i].topLeft), (j*2)+4, WHITE);
-                }
-                DrawCircleV(center, 10, BLACK);
-                int butts = 4;
-
-
-                DrawTexture(portals[i].choppedTexture.texture, portals[i].topLeft.x, portals[i].topLeft.y,Fade(GRAY, 0.2)); */
-
-                
-                
-
-            }
-
+            //DrawTexture(backgroundTexture, 0, 0, WHITE);
+            DrawTextureEx(backgroundTexture, Vector2Zero(), 0, 4, WHITE);
             DrawRectangleV(Vector2Subtract(playerPosition, Vector2Scale(playerSize, 0.5f)), playerSize, playerColor);
 
 
