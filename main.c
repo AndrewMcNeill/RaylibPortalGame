@@ -139,6 +139,15 @@ int main(void)
     Image backgroundImage = LoadImage("resources/Background.png");
     Texture2D backgroundTexture = LoadTextureFromImage(backgroundImage);
 
+    Shader shader = LoadShader(0, "shader.fs");
+
+    float screenSize[2] = { (float)GetScreenWidth(), (float)GetScreenHeight() };
+    int pixelationAmount = 1;
+
+    SetShaderValue(shader, GetShaderLocation(shader, "size"), &screenSize, SHADER_UNIFORM_VEC2);
+    SetShaderValue(shader, GetShaderLocation(shader, "pixelationAmount"), &pixelationAmount, SHADER_UNIFORM_INT);
+
+
     Vector2 playerPosition = { 100.0f, 100.0f };
     Vector2 playerSize = { 20.0f, 20.0f };
     Color playerColor = DARKBLUE;
@@ -159,7 +168,15 @@ int main(void)
         if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) playerPosition.y -= 4.0f;
         if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) playerPosition.y += 4.0f;
 
-
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            pixelationAmount+=1;
+            SetShaderValue(shader, GetShaderLocation(shader, "pixelationAmount"), &pixelationAmount, SHADER_UNIFORM_INT);
+        }
+        if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+            pixelationAmount = (pixelationAmount > 1) ? pixelationAmount-1 : pixelationAmount;
+            SetShaderValue(shader, GetShaderLocation(shader, "pixelationAmount"), &pixelationAmount, SHADER_UNIFORM_INT);
+        }
+        
         //----------------------------------------------------------------------------------
 
         // Draw
@@ -167,11 +184,15 @@ int main(void)
         BeginDrawing();
 
             ClearBackground(RAYWHITE);
+            
+            BeginShaderMode(shader);
 
-            //DrawTexture(backgroundTexture, 0, 0, WHITE);
-            DrawTextureEx(backgroundTexture, Vector2Zero(), 0, 4, WHITE);
+                DrawTexture(backgroundTexture, 0, 0, WHITE);
+
+            EndShaderMode();
+
+
             DrawRectangleV(Vector2Subtract(playerPosition, Vector2Scale(playerSize, 0.5f)), playerSize, playerColor);
-
 
             DrawFPS(10, 10);
 
