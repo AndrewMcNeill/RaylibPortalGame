@@ -221,19 +221,22 @@ int main(void)
         //----------------------------------------------------------------------------------
 
         BeginTextureMode(displayTexture);
-            BeginShaderMode(portalDisplacementShader);
-                DrawTexture(backgroundTexture, 0, 0, WHITE);
-            EndShaderMode();
+            DrawTextureRec(backgroundTexture, (Rectangle){0,0,backgroundTexture.width,-backgroundTexture.height},Vector2Zero(),WHITE);
+            DrawRectangleV(Vector2Add(Vector2Multiply(Vector2Subtract(playerPosition, (Vector2){playerSize.x*0.5f,playerSize.y*-0.5f}), (Vector2){1,-1}),(Vector2){0,backgroundTexture.height}), playerSize, playerColor);
+
         EndTextureMode();
 
         BeginDrawing();
 
             ClearBackground(RAYWHITE);
-            
-            DrawTextureRec(displayTexture.texture, (Rectangle){0,0,displayTexture.texture.width,-displayTexture.texture.height},Vector2Zero(),WHITE);
+            //DrawTexture(displayTexture.texture, 0, 0, WHITE);
 
-            // DrawRectangle(playerPosition.x-playerSize.x*0.5, playerPosition.y-playerSize.y*0.5, playerSize.x, playerSize.y, playerColor);
+            BeginShaderMode(portalDisplacementShader);
+                DrawTexture(displayTexture.texture, 0,0,WHITE);
+            EndShaderMode();
+
             DrawRectangleV(Vector2Subtract(playerPosition, Vector2Scale(playerSize, 0.5f)), playerSize, playerColor);
+
 
             for(int i = 0; i < numPortals; i++) {
                 DrawCircleV(portalPositions[i], PORTALSIZE, Fade(BLUE, 0.5f));
