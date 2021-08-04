@@ -14,7 +14,7 @@
 #include <stdio.h>
 
 #define WIDTH 1024
-#define HEIGHT 1024
+#define HEIGHT 768
 
 #define DOTCOLOR 0x882200FF
 #define MAXPORTALS 8
@@ -137,8 +137,6 @@ int main(void)
     const int screenHeight = HEIGHT;
     InitWindow(screenWidth, screenHeight, "raylib [core] example - mouse input");
 
-    float screenSize[2] = { (float)GetScreenWidth(), (float)GetScreenHeight() };
-
     const Vector2 topLeft = {0,0};
     const Vector2 topRight = {screenWidth,0};
     const Vector2 bottomLeft = {0,screenHeight};
@@ -147,6 +145,8 @@ int main(void)
 
     Image backgroundImage = LoadImage("resources/Checkerboard2.png");
     Texture2D backgroundTexture = LoadTextureFromImage(backgroundImage);
+
+    RenderTexture2D displayTexture = LoadRenderTexture(backgroundTexture.width, backgroundTexture.height);
 
     /*
     Shader pixelationShader = LoadShader(0, "pixelationShader.fs");
@@ -165,8 +165,9 @@ int main(void)
     int portalDistanceOrder[MAXPORTALS];
     int numPortals = 0;
 
+    Vector2 textureSize = (Vector2){displayTexture.texture.width,displayTexture.texture.height};
     Shader portalDisplacementShader = LoadShader(0, "portalDisplacementShader.fs");
-    SetShaderValue(portalDisplacementShader, GetShaderLocation(portalDisplacementShader, "size"), &screenSize, SHADER_UNIFORM_VEC2);
+    SetShaderValue(portalDisplacementShader, GetShaderLocation(portalDisplacementShader, "size"), &textureSize, SHADER_UNIFORM_VEC2);
     
     SetShaderValue(portalDisplacementShader, GetShaderLocation(portalDisplacementShader, "portalPositions"), &portalPositions, SHADER_UNIFORM_VEC2);
     SetShaderValueV(portalDisplacementShader, GetShaderLocation(portalDisplacementShader, "portalPositions"), &portalPositions, SHADER_UNIFORM_VEC2, numPortals);
@@ -218,15 +219,18 @@ int main(void)
 
         // Draw
         //----------------------------------------------------------------------------------
+
+        BeginTextureMode(displayTexture);
+            BeginShaderMode(portalDisplacementShader);
+                DrawTexture(backgroundTexture, 0, 0, WHITE);
+            EndShaderMode();
+        EndTextureMode();
+
         BeginDrawing();
 
             ClearBackground(RAYWHITE);
             
-            BeginShaderMode(portalDisplacementShader);
-
-                DrawTexture(backgroundTexture, 0, 0, WHITE);
-
-            EndShaderMode();
+            DrawTextureRec(displayTexture.texture, (Rectangle){0,0,displayTexture.texture.width,-displayTexture.texture.height},Vector2Zero(),WHITE);
 
             // DrawRectangle(playerPosition.x-playerSize.x*0.5, playerPosition.y-playerSize.y*0.5, playerSize.x, playerSize.y, playerColor);
             DrawRectangleV(Vector2Subtract(playerPosition, Vector2Scale(playerSize, 0.5f)), playerSize, playerColor);
