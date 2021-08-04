@@ -17,6 +17,8 @@
 #define HEIGHT 768
 
 #define DOTCOLOR 0x882200FF
+#define MAXPORTALS 8
+#define PORTALSIZE 30
 
 enum Direction {Top, Right, Bottom, Left};
 
@@ -129,28 +131,42 @@ int main(void)
     //--------------------------------------------------------------------------------------
     const int screenWidth = WIDTH;
     const int screenHeight = HEIGHT;
+    InitWindow(screenWidth, screenHeight, "raylib [core] example - mouse input");
+
+    float screenSize[2] = { (float)GetScreenWidth(), (float)GetScreenHeight() };
+
     const Vector2 topLeft = {0,0};
     const Vector2 topRight = {screenWidth,0};
     const Vector2 bottomLeft = {0,screenHeight};
     const Vector2 bottomRight = {screenWidth,screenHeight};
 
-    InitWindow(screenWidth, screenHeight, "raylib [core] example - mouse input");
 
     Image backgroundImage = LoadImage("resources/Background.png");
     Texture2D backgroundTexture = LoadTextureFromImage(backgroundImage);
 
-    Shader shader = LoadShader(0, "shader.fs");
+    /*
+    Shader pixelationShader = LoadShader(0, "pixelationShader.fs");
 
-    float screenSize[2] = { (float)GetScreenWidth(), (float)GetScreenHeight() };
     int pixelationAmount = 1;
 
-    SetShaderValue(shader, GetShaderLocation(shader, "size"), &screenSize, SHADER_UNIFORM_VEC2);
-    SetShaderValue(shader, GetShaderLocation(shader, "pixelationAmount"), &pixelationAmount, SHADER_UNIFORM_INT);
+    SetShaderValue(pixelationShader, GetShaderLocation(pixelationShader, "size"), &screenSize, SHADER_UNIFORM_VEC2);
+    SetShaderValue(pixelationShader, GetShaderLocation(pixelationShader, "pixelationAmount"), &pixelationAmount, SHADER_UNIFORM_INT);
+    */
 
-
-    Vector2 playerPosition = { 100.0f, 100.0f };
+    float playerPosition[8] = { 100.0f, 100.0f };
     Vector2 playerSize = { 20.0f, 20.0f };
     Color playerColor = DARKBLUE;
+
+    Vector2 portalPositions[MAXPORTALS] = {{200,300},{400,600}};
+    int numPortals = 2;
+
+    Shader portalDisplacementShader = LoadShader(0, "portalDisplacementShader.fs");
+    SetShaderValue(portalDisplacementShader, GetShaderLocation(portalDisplacementShader, "size"), &screenSize, SHADER_UNIFORM_VEC2);
+    
+    SetShaderValue(portalDisplacementShader, GetShaderLocation(portalDisplacementShader, "portalPositions"), &portalPositions, SHADER_UNIFORM_VEC2);
+    SetShaderValueV(portalDisplacementShader, GetShaderLocation(portalDisplacementShader, "portalPositions"), &portalPositions, SHADER_UNIFORM_VEC2, numPortals);
+    SetShaderValue(portalDisplacementShader, GetShaderLocation(portalDisplacementShader, "numPortals"), &numPortals, SHADER_UNIFORM_INT);
+    SetShaderValue(portalDisplacementShader, GetShaderLocation(portalDisplacementShader, "playerPosition"), &playerPosition, SHADER_UNIFORM_VEC2);
 
 
     SetTargetFPS(60);               // Set our game to run at 60 frames-per-second
@@ -163,19 +179,24 @@ int main(void)
         //----------------------------------------------------------------------------------
 
         
-        if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) playerPosition.x += 4.0f;
-        if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) playerPosition.x -= 4.0f;
-        if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) playerPosition.y -= 4.0f;
-        if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) playerPosition.y += 4.0f;
+        if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) playerPosition[0] += 4.0f;
+        if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) playerPosition[0] -= 4.0f;
+        if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) playerPosition[1] -= 4.0f;
+        if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) playerPosition[1] += 4.0f;
+        SetShaderValue(portalDisplacementShader, GetShaderLocation(portalDisplacementShader, "playerPosition"), &playerPosition, SHADER_UNIFORM_VEC2);
+
 
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            pixelationAmount+=1;
-            SetShaderValue(shader, GetShaderLocation(shader, "pixelationAmount"), &pixelationAmount, SHADER_UNIFORM_INT);
+            if (numPortals < MAXPORTALS) {
+                portalPositions[numPortals++] = GetMousePosition();
+                SetShaderValueV(portalDisplacementShader, GetShaderLocation(portalDisplacementShader, "portalPositions"), &portalPositions, SHADER_UNIFORM_VEC2, (numPortals/2)*2);
+                SetShaderValue(portalDisplacementShader, GetShaderLocation(portalDisplacementShader, "numPortals"), &numPortals, SHADER_UNIFORM_INT);
+            }
         }
-        if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+        /*if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
             pixelationAmount = (pixelationAmount > 1) ? pixelationAmount-1 : pixelationAmount;
-            SetShaderValue(shader, GetShaderLocation(shader, "pixelationAmount"), &pixelationAmount, SHADER_UNIFORM_INT);
-        }
+            SetShaderValue(pixelationShader, GetShaderLocation(pixelationShader, "pixelationAmount"), &pixelationAmount, SHADER_UNIFORM_INT);
+        }*/
         
         //----------------------------------------------------------------------------------
 
@@ -185,14 +206,18 @@ int main(void)
 
             ClearBackground(RAYWHITE);
             
-            BeginShaderMode(shader);
+            BeginShaderMode(portalDisplacementShader);
 
                 DrawTexture(backgroundTexture, 0, 0, WHITE);
 
             EndShaderMode();
 
+            DrawRectangle(playerPosition[0]-playerSize.x*0.5, playerPosition[1]-playerSize.y*0.5, playerSize.x, playerSize.y, playerColor);
+            // DrawRectangleV(Vector2Subtract(playerPosition, Vector2Scale(playerSize, 0.5f)), playerSize, playerColor);
 
-            DrawRectangleV(Vector2Subtract(playerPosition, Vector2Scale(playerSize, 0.5f)), playerSize, playerColor);
+            for(int i = 0; i < numPortals; i++) {
+                DrawCircleV(portalPositions[i], PORTALSIZE, Fade(BLUE, 0.5f));
+            }
 
             DrawFPS(10, 10);
 

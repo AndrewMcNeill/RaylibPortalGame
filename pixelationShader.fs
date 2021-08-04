@@ -21,10 +21,11 @@ void main() {
     float pixelHeight = 1.0 / size.y;
     float aspect = pixelHeight / pixelWidth;
 
+
+    vec2 p = fragTexCoord;
     float dx = pixelationAmount * pixelWidth;
     float dy = pixelationAmount * pixelHeight;
 
-    vec2 p = fragTexCoord;
     p.x = dx * floor(p.x/dx);
     p.y = dy * floor(p.y/dy);
 
