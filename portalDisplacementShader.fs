@@ -14,6 +14,7 @@ out vec4 finalColor;
 
 uniform vec2 size;
 uniform vec2 portalPositions[8];
+uniform int portalDistanceOrder[8];
 uniform int numPortals;
 uniform vec2 playerPosition;
 
@@ -32,10 +33,10 @@ void main() {
     bool solutionFound = false;
 
     for (int i = 0; i < numPortals; i++) {
+        int j = portalDistanceOrder[i];
 
-
-        float cx = portalPositions[i].x * pixelWidth;
-        float cy = portalPositions[i].y * pixelHeight;
+        float cx = portalPositions[j].x * pixelWidth;
+        float cy = portalPositions[j].y * pixelHeight;
 
         
 
@@ -87,10 +88,10 @@ void main() {
         }
 
         if (solutionFound) {
-            int portalIndexOffset = ((i % 2) * 2 - 1)*-1;
+            int portalIndexOffset = ((j % 2) * 2 - 1)*-1;
             vec2 newPos = vec2(
-                p.x - cx + portalPositions[i+portalIndexOffset].x * pixelWidth,
-                p.y - cy + portalPositions[i+portalIndexOffset].y * pixelHeight);
+                p.x - cx + portalPositions[j+portalIndexOffset].x * pixelWidth,
+                p.y - cy + portalPositions[j+portalIndexOffset].y * pixelHeight);
             if (newPos.x < 0 || newPos.x > 1 || newPos.y < 0 || newPos.y > 1) {
                 finalColor = vec4(0.0,0.0,0.0,1.0);
             } else {

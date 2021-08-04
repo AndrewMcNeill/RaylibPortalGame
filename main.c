@@ -14,7 +14,7 @@
 #include <stdio.h>
 
 #define WIDTH 1024
-#define HEIGHT 768
+#define HEIGHT 1024
 
 #define DOTCOLOR 0x882200FF
 #define MAXPORTALS 8
@@ -105,6 +105,10 @@ enum Direction RayScreenCollisionPoint(
     return 0;
 }
 
+float QuickDistance(Vector2 a, Vector2 b) {
+    return fabs((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y));
+}
+
 typedef struct Portal Portal;
 struct Portal {
     Vector2 position;
@@ -141,7 +145,7 @@ int main(void)
     const Vector2 bottomRight = {screenWidth,screenHeight};
 
 
-    Image backgroundImage = LoadImage("resources/Background.png");
+    Image backgroundImage = LoadImage("resources/Checkerboard2.png");
     Texture2D backgroundTexture = LoadTextureFromImage(backgroundImage);
 
     /*
@@ -153,18 +157,20 @@ int main(void)
     SetShaderValue(pixelationShader, GetShaderLocation(pixelationShader, "pixelationAmount"), &pixelationAmount, SHADER_UNIFORM_INT);
     */
 
-    float playerPosition[8] = { 100.0f, 100.0f };
+    Vector2 playerPosition = { 100.0f, 100.0f };
     Vector2 playerSize = { 20.0f, 20.0f };
     Color playerColor = DARKBLUE;
 
-    Vector2 portalPositions[MAXPORTALS] = {{200,300},{400,600}};
-    int numPortals = 2;
+    Vector2 portalPositions[MAXPORTALS];
+    int portalDistanceOrder[MAXPORTALS];
+    int numPortals = 0;
 
     Shader portalDisplacementShader = LoadShader(0, "portalDisplacementShader.fs");
     SetShaderValue(portalDisplacementShader, GetShaderLocation(portalDisplacementShader, "size"), &screenSize, SHADER_UNIFORM_VEC2);
     
     SetShaderValue(portalDisplacementShader, GetShaderLocation(portalDisplacementShader, "portalPositions"), &portalPositions, SHADER_UNIFORM_VEC2);
     SetShaderValueV(portalDisplacementShader, GetShaderLocation(portalDisplacementShader, "portalPositions"), &portalPositions, SHADER_UNIFORM_VEC2, numPortals);
+    SetShaderValueV(portalDisplacementShader, GetShaderLocation(portalDisplacementShader, "portalDistanceOrder"), &portalDistanceOrder, SHADER_UNIFORM_INT, numPortals);
     SetShaderValue(portalDisplacementShader, GetShaderLocation(portalDisplacementShader, "numPortals"), &numPortals, SHADER_UNIFORM_INT);
     SetShaderValue(portalDisplacementShader, GetShaderLocation(portalDisplacementShader, "playerPosition"), &playerPosition, SHADER_UNIFORM_VEC2);
 
@@ -179,10 +185,10 @@ int main(void)
         //----------------------------------------------------------------------------------
 
         
-        if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) playerPosition[0] += 4.0f;
-        if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) playerPosition[0] -= 4.0f;
-        if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) playerPosition[1] -= 4.0f;
-        if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) playerPosition[1] += 4.0f;
+        if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) playerPosition.x += 4.0f;
+        if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) playerPosition.x -= 4.0f;
+        if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) playerPosition.y -= 4.0f;
+        if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) playerPosition.y += 4.0f;
         SetShaderValue(portalDisplacementShader, GetShaderLocation(portalDisplacementShader, "playerPosition"), &playerPosition, SHADER_UNIFORM_VEC2);
 
 
@@ -193,11 +199,21 @@ int main(void)
                 SetShaderValue(portalDisplacementShader, GetShaderLocation(portalDisplacementShader, "numPortals"), &numPortals, SHADER_UNIFORM_INT);
             }
         }
-        /*if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
-            pixelationAmount = (pixelationAmount > 1) ? pixelationAmount-1 : pixelationAmount;
-            SetShaderValue(pixelationShader, GetShaderLocation(pixelationShader, "pixelationAmount"), &pixelationAmount, SHADER_UNIFORM_INT);
-        }*/
-        
+        for (int i = 0; i < numPortals; i++) portalDistanceOrder[i] = i;
+        for (int i = 0; i < numPortals; i++) {
+            float dist1 = QuickDistance(portalPositions[portalDistanceOrder[i]], playerPosition);
+            for (int j = i; j < numPortals; j++) {
+                float dist2 = QuickDistance(portalPositions[portalDistanceOrder[j]], playerPosition);
+                if (dist2 < dist1) {
+                    dist1 = dist2;
+                    int temp = portalDistanceOrder[i];
+                    portalDistanceOrder[i] = portalDistanceOrder[j];
+                    portalDistanceOrder[j] = temp;
+                }
+            }
+        }
+        SetShaderValueV(portalDisplacementShader, GetShaderLocation(portalDisplacementShader, "portalDistanceOrder"), &portalDistanceOrder, SHADER_UNIFORM_INT, numPortals);
+
         //----------------------------------------------------------------------------------
 
         // Draw
@@ -212,14 +228,17 @@ int main(void)
 
             EndShaderMode();
 
-            DrawRectangle(playerPosition[0]-playerSize.x*0.5, playerPosition[1]-playerSize.y*0.5, playerSize.x, playerSize.y, playerColor);
-            // DrawRectangleV(Vector2Subtract(playerPosition, Vector2Scale(playerSize, 0.5f)), playerSize, playerColor);
+            // DrawRectangle(playerPosition.x-playerSize.x*0.5, playerPosition.y-playerSize.y*0.5, playerSize.x, playerSize.y, playerColor);
+            DrawRectangleV(Vector2Subtract(playerPosition, Vector2Scale(playerSize, 0.5f)), playerSize, playerColor);
 
             for(int i = 0; i < numPortals; i++) {
                 DrawCircleV(portalPositions[i], PORTALSIZE, Fade(BLUE, 0.5f));
             }
 
             DrawFPS(10, 10);
+            for (int i = 0; i < numPortals; i++) {
+                DrawText(FormatText("%i", portalDistanceOrder[i]), 10, 30 + 24*i, 20, WHITE);
+            }
 
         EndDrawing();
         //----------------------------------------------------------------------------------
