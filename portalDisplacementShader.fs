@@ -73,19 +73,19 @@ void main() {
             }
 
             if (numSolutions >= 1 && 
-                abs(p.x-playerUVPosition.x) >= abs(playerUVPosition.x-intersection1.x) && 
-                abs(p.y-playerUVPosition.y) >= abs(playerUVPosition.y-intersection1.y) &&
-                abs(p.x-intersection1.x) < abs(p.x-playerUVPosition.x) &&
-                abs(p.y-intersection1.y) < abs(p.y-playerUVPosition.y)){
+                abs(p.x-playerUVPosition.x) >= abs(playerUVPosition.x-intersection2.x) && 
+                abs(p.y-playerUVPosition.y) >= abs(playerUVPosition.y-intersection2.y) &&
+                abs(p.x-intersection2.x) < abs(p.x-playerUVPosition.x) &&
+                abs(p.y-intersection2.y) < abs(p.y-playerUVPosition.y)){
                 
                 
                 solutionFound = true;
             }
         }
 
-        if (abs(playerUVPosition.x - cx) <= radius && abs(playerUVPosition.y - cy) <= radius) {
+        /*if (abs(playerUVPosition.x - cx) <= radius && abs(playerUVPosition.y - cy) <= radius) {
             solutionFound = true;
-        }
+        }*/
 
         if (solutionFound) {
             int portalIndexOffset = ((j % 2) * 2 - 1)*-1;

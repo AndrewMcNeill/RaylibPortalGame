@@ -13,8 +13,8 @@
 #include "raymath.h"
 #include <stdio.h>
 
-#define WIDTH 1024
-#define HEIGHT 768
+#define WIDTH 800
+#define HEIGHT 600
 
 #define DOTCOLOR 0x882200FF
 #define MAXPORTALS 8
@@ -146,7 +146,7 @@ int main(void)
     Image backgroundImage = LoadImage("resources/Checkerboard2.png");
     Texture2D backgroundTexture = LoadTextureFromImage(backgroundImage);
 
-    RenderTexture2D displayTexture = LoadRenderTexture(backgroundTexture.width, backgroundTexture.height);
+    RenderTexture2D displayTexture = LoadRenderTexture(WIDTH, WIDTH);
 
     /*
     Shader pixelationShader = LoadShader(0, "pixelationShader.fs");
@@ -222,7 +222,7 @@ int main(void)
 
         BeginTextureMode(displayTexture);
             DrawTextureRec(backgroundTexture, (Rectangle){0,0,backgroundTexture.width,-backgroundTexture.height},Vector2Zero(),WHITE);
-            DrawRectangleV(Vector2Add(Vector2Multiply(Vector2Subtract(playerPosition, (Vector2){playerSize.x*0.5f,playerSize.y*-0.5f}), (Vector2){1,-1}),(Vector2){0,backgroundTexture.height}), playerSize, playerColor);
+            DrawRectangleV(Vector2Add(Vector2Multiply(Vector2Subtract(playerPosition, (Vector2){playerSize.x*0.5f,playerSize.y*-0.5f}), (Vector2){1,-1}),(Vector2){0,displayTexture.texture.height}), playerSize, playerColor);
 
         EndTextureMode();
 
@@ -239,7 +239,7 @@ int main(void)
 
 
             for(int i = 0; i < numPortals; i++) {
-                DrawCircleV(portalPositions[i], PORTALSIZE, Fade(BLUE, 0.5f));
+                //DrawCircleV(portalPositions[i], PORTALSIZE, Fade(BLUE, 0.5f));
             }
 
             DrawFPS(10, 10);
